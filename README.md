@@ -1,4 +1,4 @@
-# Google Pub/Sub Nifi Consumer
+# Google Pub/Sub Nifi Consumer with Proxy Configuration
 
 This NIFI processor consumes Google Pub/Sub directly or behind a proxy.
 
@@ -10,7 +10,7 @@ Author: Abdelaziz KHAJOUR
 - Topic: Google pubsub topic
 - Project ID: Google GCP project
 - Subscription: Google pubsub subscription
-- Pull Count: 10 number of messages to pull from Google Pub Sub
+- Pull Count: number of messages to pull from Google Pub Sub
 - Use Proxy: true/false
 - Proxy Host: *******
 - Proxy Port: 3128
