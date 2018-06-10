@@ -1,9 +1,14 @@
 package com.akr.nifi.google.pubsub.consumer;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
+
+import com.google.pubsub.v1.ReceivedMessage;
 import org.apache.nifi.annotation.documentation.CapabilityDescription;
 import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
 import org.apache.nifi.processor.ProcessSession;
@@ -13,12 +18,13 @@ import org.apache.nifi.processor.exception.ProcessException;
 
 
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 
 
-@Tags({"google", "pubsub", "consumer", "renault"})
+@Tags({"google", "pubsub", "pub sub", "consumer", "renault", "khajour", "proxy"})
 
-@CapabilityDescription("This example processor loads a resource from the nar and writes it to the FlowFile content")
+@CapabilityDescription("Google Pub Sub consumer")
 public class NifiPubsubProcessor extends AbstractProcessor {
 
 
@@ -139,45 +145,17 @@ public class NifiPubsubProcessor extends AbstractProcessor {
     @OnScheduled
     public void onScheduled(final ProcessContext context) {
 
-        if ( "true".equals(context.getProperty(useProxy).getValue())) {
-
-            System.setProperty("http.proxyHost", context.getProperty(proxyHost).getValue());
-            System.setProperty("https.proxyHost", context.getProperty(proxyHost).getValue());
-
-            System.setProperty("http.proxyPort", context.getProperty(proxyPort).getValue());
-            System.setProperty("https.proxyPort", context.getProperty(proxyPort).getValue());
-
-            System.setProperty("http.proxyUser", context.getProperty(proxyUser).getValue());
-            System.setProperty("https.proxyUser", context.getProperty(proxyUser).getValue());
-
-            System.setProperty("http.proxyPassword", context.getProperty(proxyPassword).getValue());
-            System.setProperty("https.proxyPassword", context.getProperty(proxyPassword).getValue());
-
-            //System.setProperty("GRPC_PROXY_EXP", "xxxx:3128");
-
-
-/**
-            Authenticator.setDefault(
-                    new Authenticator() {
-                        @Override
-                        public PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication(
-                                    context.getProperty(proxyUser).getValue(),
-                                    context.getProperty(proxyPassword).getValue().toCharArray());
-                        }
-                    }
-            );
-**/
-
-        }
-
-
         if (pubsub == null) {
             try {
                 pubsub = new PubsubConsumer()
                         .project(context.getProperty(projectIdProperty).getValue())
                         .credentials(context.getProperty(authProperty).getValue())
                         .subscription(context.getProperty(subProperty).getValue())
+                        .useProxy(Boolean.valueOf(context.getProperty(useProxy).getValue()))
+                        .proxyHost(context.getProperty(proxyHost).getValue())
+                        .proxyPort(context.getProperty(proxyPort).getValue())
+                        .proxyUser(context.getProperty(proxyUser).getValue())
+                        .proxyPassword(context.getProperty(proxyPassword).getValue())
                         .processor(this)
                         .build();
             } catch (Exception ex) {
@@ -190,18 +168,33 @@ public class NifiPubsubProcessor extends AbstractProcessor {
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
 
         try {
-            pubsub.getMessages();
+            List<ReceivedMessage> mess = pubsub.getMessages();
+            Iterator<ReceivedMessage> messages = mess.iterator();
+
+            while(messages.hasNext()) {
+                final ReceivedMessage msg = messages.next();
+
+                FlowFile flow = session.create();
+
+                flow = session.write(flow, new OutputStreamCallback() {
+                    @Override
+                    public void process(OutputStream out) throws IOException {
+                        out.write(msg.getMessage().getData().toByteArray());
+                    }
+                });
+
+                flow = session.putAttribute(flow, "ack_id", msg.getAckId());
+                flow = session.putAttribute(flow, "filename", Long.toString(System.nanoTime()));
+
+                session.transfer(flow, REL_SUCCESS);
+            }
+
+            session.commit();
+
         } catch( Exception ex){
             throw new ProcessException("Error  getting pubsub messages", ex);
         }
 
     }
-
-
-    public void log(String msg){
-        getLogger().info(msg);
-    }
-
-
 
 }

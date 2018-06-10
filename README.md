@@ -12,10 +12,10 @@ Author: Abdelaziz KHAJOUR
 - Subscription: Google pubsub subscription
 - Pull Count: number of messages to pull from Google Pub Sub
 - Use Proxy: true/false
-- Proxy Host: *******
-- Proxy Port: 3128
-- Proxy User: ***
-- Proxy Password: *********
+- Proxy Host: <POROXY_HOST_VALUE>
+- Proxy Port: <POROXY_PORT_VALUE>
+- Proxy User: <POROXY_USER_VALUE>
+- Proxy Password: <POROXY_PASSWORD_VALUE>
 
 
 ## Install NIFI 
@@ -27,17 +27,23 @@ $ brew install nifi
 ## Build and deploy to NIFI
 
 ```
+$ git clone https://github.com/khajour/nifi-google-pubsub-consumer.git
+$ cd nifi-google-pubsub-consumer
 $ mvn clean package
 $ rm -f /usr/local/Cellar/nifi/1.5.0/libexec/lib/google-pubsub-nifi-consumer-1.0.0.nar
 $ cp ./target/*.nar /usr/local/Cellar/nifi/1.5.0/libexec/lib/
-$ nifi restart`
+
+$ export GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account.json 
+
+$ nifi restart
 
 ```
 
 
 ## logs
-``
-tail -f /usr/local/Cellar/nifi/1.5.0/libexec/logs/nifi-app.log
 ```
 
+tail -f /usr/local/Cellar/nifi/1.5.0/libexec/logs/nifi-app.log
+
+```
 
