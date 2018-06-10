@@ -38,6 +38,12 @@ $ export GOOGLE_APPLICATION_CREDENTIALS=path-to-service-account.json
 $ nifi restart
 
 ```
+## Test the pubsub processor with the NIFI UI
+
+Go to localhost:8080/nifi
+
+[NifiPubsubProcessor] <------> [PutFile]
+
 
 
 ## logs
